@@ -11,7 +11,7 @@ import {
 import { ThemeProvider } from "@/components/ThemeProvider";
 import Navbar from "@/components/Navbar";
 import Sidebar from "@/components/Sidebar";
-
+import { Toaster } from 'react-hot-toast';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -54,7 +54,7 @@ export default function RootLayout({
               </main>
 
             </div>
-
+            <Toaster />
           </ThemeProvider>
         </body>
       </html>
