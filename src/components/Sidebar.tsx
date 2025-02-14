@@ -1,18 +1,57 @@
+"use client"
+
 import { currentUser } from "@clerk/nextjs/server";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { SignInButton, SignUpButton } from "@clerk/nextjs";
+import { Button } from "./ui/button";
 import { getUserByClerkId } from "@/actions/user.action";
 import Link from "next/link";
 import { Avatar, AvatarImage } from "./ui/avatar";
 import { Separator } from "./ui/separator";
 import { LinkIcon, MapPinIcon } from "lucide-react";
-import { UnAuthenticatedSidebar } from "./NotAuthenticated";
+import { useEffect, useState } from "react";
+import { User } from "@prisma/client";
 
-async function Sidebar() {
-    const authUser = await currentUser();
-    if (!authUser) return <UnAuthenticatedSidebar />;
+type UserWithCount = User & {
+    _count: {
+        followers: number;
+        following: number;
+        posts: number;
+    }
+};
+function Sidebar() {
+    const [user, setUser] = useState<UserWithCount | null>(null);
+    const [loading, setLoading] = useState(true); // Track loading state
 
-    const user = await getUserByClerkId(authUser.id);
-    if (!user) return null;
+    useEffect(() => {
+        const fetchUser = async () => {
+            const authUser = await currentUser();
+            if (!authUser) {
+                setLoading(false);
+                return;
+            }
+
+            const curr_user = await getUserByClerkId(authUser.id);
+            if (!curr_user) {
+                setLoading(false);
+                return;
+            }
+
+            setUser(curr_user);
+            setLoading(false);
+        };
+        fetchUser();
+    }, []);
+
+    // Show a loading spinner or placeholder UI while fetching data
+    if (loading) {
+        return <div>Loading...</div>;
+    }
+
+    // If user is null, show the UnAuthenticatedSidebar
+    if (!user) {
+        return <UnAuthenticatedSidebar />;
+    }
 
     return (
         <div className="sticky top-20">
@@ -23,7 +62,7 @@ async function Sidebar() {
                             href={`/profile/${user.username}`}
                             className="flex flex-col items-center justify-center"
                         >
-                            <Avatar className="w-20 h-20 border-2 ">
+                            <Avatar className="w-20 h-20 border-2">
                                 <AvatarImage src={user.image || "/avatar.png"} />
                             </Avatar>
 
@@ -74,5 +113,30 @@ async function Sidebar() {
     );
 }
 
+
 export default Sidebar;
 
+const UnAuthenticatedSidebar = () => (
+    <div className="sticky top-20">
+        <Card>
+            <CardHeader>
+                <CardTitle className="text-center text-xl font-semibold">Welcome Back!</CardTitle>
+            </CardHeader>
+            <CardContent>
+                <p className="text-center text-muted-foreground mb-4">
+                    Login to access your profile and connect with others.
+                </p>
+                <SignInButton mode="modal">
+                    <Button className="w-full" variant="outline">
+                        Login
+                    </Button>
+                </SignInButton>
+                <SignUpButton mode="modal">
+                    <Button className="w-full mt-2" variant="default">
+                        Sign Up
+                    </Button>
+                </SignUpButton>
+            </CardContent>
+        </Card>
+    </div>
+);

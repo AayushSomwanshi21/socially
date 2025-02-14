@@ -1,12 +1,39 @@
+"use client"
+
 import { BellIcon, HomeIcon, UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { SignInButton, UserButton } from "@clerk/nextjs";
+import { SignInButton, UserButton, useUser } from "@clerk/nextjs";
 import ModeToggle from "./ModeToggle";
-import { currentUser } from "@clerk/nextjs/server";
+import { currentUser, User } from "@clerk/nextjs/server";
+import { useEffect, useState } from "react";
 
-async function DesktopNavbar() {
-    const user = await currentUser();
+
+function DesktopNavbar() {
+
+    const { user, isLoaded } = useUser();
+
+
+    async function saveUserToDB() {
+        if (user) {
+            try {
+                await fetch("/api/auth", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                });
+            } catch (error) {
+                console.error("Error saving user:", error);
+            }
+        }
+    }
+
+
+    useEffect(() => {
+        if (isLoaded && user) {
+            saveUserToDB();
+        }
+    }, [isLoaded, user]);
+
 
     return (
         <div className="hidden md:flex items-center space-x-4">
