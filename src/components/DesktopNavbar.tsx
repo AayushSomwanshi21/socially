@@ -3,37 +3,40 @@
 import { BellIcon, HomeIcon, UserIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { SignInButton, UserButton, useUser } from "@clerk/nextjs";
+import { SignInButton, UserButton, useUser, RedirectToSignIn } from "@clerk/nextjs";
 import ModeToggle from "./ModeToggle";
-import { currentUser, User } from "@clerk/nextjs/server";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 
 function DesktopNavbar() {
 
-    const { user, isLoaded } = useUser();
-
-
-    async function saveUserToDB() {
-        if (user) {
-            try {
-                await fetch("/api/auth", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                });
-            } catch (error) {
-                console.error("Error saving user:", error);
-            }
-        }
-    }
-
+    const { isSignedIn, user } = useUser();
 
     useEffect(() => {
-        if (isLoaded && user) {
+        if (isSignedIn && user) {
+            const saveUserToDB = async () => {
+                try {
+                    await fetch("/api/auth", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({
+                            clerkId: user.id,
+                            name: `${user.firstName || ""} ${user.lastName || ""}`,
+                            username: user.username ?? user.emailAddresses[0].emailAddress.split("@")[0],
+                            email: user.emailAddresses[0].emailAddress,
+                            image: user.imageUrl,
+                        }),
+                    });
+                } catch (error) {
+                    console.error("Failed to save user:", error);
+                }
+            };
+
             saveUserToDB();
         }
-    }, [isLoaded, user]);
-
+    }, [isSignedIn, user]);
 
     return (
         <div className="hidden md:flex items-center space-x-4">
@@ -66,7 +69,7 @@ function DesktopNavbar() {
                     <UserButton />
                 </>
             ) : (
-                <SignInButton mode="modal">
+                <SignInButton mode="modal" >
                     <Button variant="default">Sign In</Button>
                 </SignInButton>
             )}
